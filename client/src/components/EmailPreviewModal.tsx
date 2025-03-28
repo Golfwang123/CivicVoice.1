@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Project, EmailSubmission } from "@/lib/types";
+import { ImageIcon } from "lucide-react";
 
 interface EmailPreviewModalProps {
   project: Project;
@@ -221,6 +222,15 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
                       </div>
                     )}
                   </div>
+                  
+                  {project.photoData && (
+                    <div className="mt-2 flex items-center text-sm text-gray-600">
+                      <div className="flex items-center text-green-600">
+                        <ImageIcon className="h-4 w-4 mr-1" />
+                        <span>Photo will be attached to this email</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div>

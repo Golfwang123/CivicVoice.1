@@ -182,6 +182,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send the email
       const emailContent = validatedData.customContent || project.emailTemplate;
       
+      // Prepare photo attachment if available
+      let attachments = [];
+      if (project.photoData) {
+        // Extract the base64 data (remove the data URL prefix)
+        const matches = project.photoData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+        
+        if (matches && matches.length === 3) {
+          const contentType = matches[1];
+          const imageData = matches[2];
+          
+          // Determine file extension based on content type
+          let fileExtension = 'jpg';
+          if (contentType.includes('png')) fileExtension = 'png';
+          else if (contentType.includes('gif')) fileExtension = 'gif';
+          
+          attachments.push({
+            filename: `issue-photo.${fileExtension}`,
+            content: Buffer.from(imageData, 'base64'),
+            contentType,
+            encoding: 'base64'
+          });
+        }
+      }
+      
       // Use the sender's email if provided, otherwise use a default
       const from = normalizeEmail(validatedData.senderEmail) || "noreply@civicvoice.org";
       // Make sure senderName is a string if present, otherwise undefined
@@ -192,7 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         to: project.emailRecipient,
         subject: project.emailSubject,
         text: emailContent,
-        senderName
+        senderName,
+        attachments
       });
       
       if (!result.success) {

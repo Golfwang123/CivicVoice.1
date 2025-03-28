@@ -27,8 +27,14 @@ export async function sendEmail(options: {
   text: string;
   html?: string;
   senderName?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+    encoding?: string;
+  }>;
 }): Promise<{ success: boolean; message: string }> {
-  const { from, to, subject, text, html, senderName } = options;
+  const { from, to, subject, text, html, senderName, attachments } = options;
   
   try {
     if (SIMULATE_EMAIL_SENDING) {
@@ -37,6 +43,10 @@ export async function sendEmail(options: {
       console.log(`From: ${senderName ? `${senderName} <${from}>` : from}`);
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
+      console.log(`Attachments: ${attachments ? attachments.length : 0} files`);
+      if (attachments?.length) {
+        console.log(`Attachment filenames: ${attachments.map(a => a.filename).join(', ')}`);
+      }
       console.log(`\nBody:\n${text}`);
       console.log('--- END OF EMAIL ---\n');
       
@@ -48,7 +58,8 @@ export async function sendEmail(options: {
         to: to,
         subject: subject,
         text: text,
-        html: html || text.replace(/\n/g, '<br>')
+        html: html || text.replace(/\n/g, '<br>'),
+        attachments: attachments || []
       };
       
       await transporter.sendMail(mailOptions);
