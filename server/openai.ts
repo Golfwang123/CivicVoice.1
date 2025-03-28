@@ -17,11 +17,11 @@ export async function generateEmailTemplate(
       messages: [
         {
           role: "system",
-          content: "You are an assistant helping citizens write brief, friendly emails to local officials about infrastructure issues. Create short, personable emails that sound like they're written by a real person, not a robot. Avoid overly formal language and keep the tone conversational. Limit emails to 3-4 short paragraphs maximum. Include a subject line and determine the most appropriate municipal department to address the email to.",
+          content: "You are an assistant helping citizens write brief, friendly emails to local officials about infrastructure issues. Create short, fact-based emails that sound natural but ONLY use the information provided. Avoid overly formal language and stick strictly to the details given. Never add fictional scenarios, personal stories, or made-up examples. Limit emails to 2-3 short paragraphs. Include a subject line and determine the most appropriate municipal department to address the email to.",
         },
         {
           role: "user",
-          content: `Please write a friendly, conversational email to a local city official about a ${issueType} issue at ${location}. The urgency level is ${urgencyLevel}. Here's a description of the issue: "${description}". Keep it brief and natural-sounding. Format your response as JSON with fields: emailSubject, emailTo (department email), and emailBody.`,
+          content: `Please write a clear, concise email to a local city official about a ${issueType} issue at ${location}. The urgency level is ${urgencyLevel}. Here's a description of the issue: "${description}". Use ONLY the information provided - do not add fictional details or scenarios. Format your response as JSON with fields: emailSubject, emailTo (department email), and emailBody.`,
         },
       ],
       response_format: { type: "json_object" },
@@ -100,18 +100,16 @@ function getFallbackEmailTemplate(
   
   const emailSubject = `${location} ${issueName} needs attention`;
   
-  // Create a more personable, shorter email template
+  // Create a concise, fact-based email template
   const emailBody = `Dear ${department},
 
 I'm writing about a ${issueName} at ${location} that needs your attention. ${urgencyLevel === 'high' ? "This is an urgent safety issue." : ""}
 
 ${description}
 
-Many residents use this area daily, and fixing this would make our neighborhood safer and more accessible.
+Could someone from your office look into this matter? I'm available to provide any additional information if needed.
 
-Could someone from your office look into this soon? I'm happy to provide more details if needed.
-
-Thanks for your help,
+Thanks for your consideration,
 [Your Name]`;
 
   return {
@@ -140,11 +138,11 @@ export async function regenerateEmailWithTone(
       messages: [
         {
           role: "system",
-          content: `You are an assistant helping citizens write brief, friendly emails to local officials. You'll be given an existing email and asked to rewrite it with a ${tone} tone while preserving the core message and issue details. Make the email sound like it was written by a real person, not a robot. Keep it short (3-4 paragraphs max) and conversational. Avoid overly formal language unless specifically requested.`,
+          content: `You are an assistant helping citizens write brief emails to local officials. You'll be given an existing email and asked to rewrite it with a ${tone} tone. IMPORTANT: Don't add any fictional details, names, or scenarios that weren't in the original email. Only adjust the tone and writing style without embellishing or adding new information. Keep it short (2-3 paragraphs) and ensure you only use facts from the original email.`,
         },
         {
           role: "user",
-          content: `Please rewrite this email with a ${tone} tone. Keep it short, friendly, and natural-sounding while maintaining the same basic information about the issue:\n\n${originalEmail}`,
+          content: `Please rewrite this email with a ${tone} tone. Keep it brief and stick ONLY to the information provided in the original email. DO NOT add any fictional details, people, or scenarios:\n\n${originalEmail}`,
         },
       ],
       temperature: 0.7,
@@ -193,28 +191,28 @@ function applyFallbackToneAdjustment(email: string, tone: string): string {
   const issueTypeMatch = email.match(/\b(?:pothole|crosswalk|sidewalk|streetlight|traffic light|sign|infrastructure|safety hazard|drainage|flooding|accessibility)\b/i);
   const issueType = issueTypeMatch ? issueTypeMatch[0].toLowerCase() : "infrastructure issue";
   
-  // Apply tone adjustments - shorter, more personable emails that sound like a real person
+  // Apply tone adjustments - adjust only the tone without adding fictional details
   let adjustedEmail = "";
   
   switch(tone.toLowerCase()) {
     case "professional":
-      adjustedEmail = `${salutation},\n\nI'm writing about the ${issueType} ${location} that needs attention. This is creating safety concerns for residents in the area.\n\nCould your department look into this soon? I'd be happy to provide more details if needed.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'm writing to inform you about a ${issueType} ${location} that requires attention. This presents a safety concern for residents using this area.\n\nWould your department be able to address this matter? I'm available to provide any additional information that might be helpful.\n\n${signoff}`;
       break;
       
     case "formal":
-      adjustedEmail = `${salutation},\n\nI'd like to request your department's attention to a ${issueType} ${location}.\n\nThis issue falls under your department's responsibility and should be addressed according to city standards. I'm available to provide additional information if needed.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'm writing to request your department's attention to a ${issueType} ${location}.\n\nThis infrastructure issue falls under your department's responsibility and should be addressed per municipal standards.\n\n${signoff}`;
       break;
       
     case "assertive":
-      adjustedEmail = `${salutation},\n\nThe ${issueType} ${location} needs immediate attention. This has been a problem for a while now and poses real safety risks.\n\nMany neighbors have complained about this issue. We need this fixed within the next two weeks. What steps will your department take to resolve this?\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nThe ${issueType} ${location} needs immediate attention. This presents a clear safety risk that should be addressed promptly.\n\nI expect this matter to be resolved soon. Please inform me of what steps will be taken to fix this issue.\n\n${signoff}`;
       break;
       
     case "concerned":
-      adjustedEmail = `${salutation},\n\nI'm worried about the ${issueType} ${location} in our neighborhood. I've seen seniors and parents with strollers struggling to navigate around it.\n\nSomeone could get hurt if this isn't fixed soon. Please consider how this affects our community's daily lives and safety.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'm concerned about the ${issueType} ${location} in our community. This issue creates difficulties for residents and could lead to injuries if not addressed.\n\nPlease consider the safety impact this has on our community and address it soon.\n\n${signoff}`;
       break;
       
     case "personal":
-      adjustedEmail = `${salutation},\n\nI wanted to reach out about the ${issueType} ${location} that I pass by every day. Last week, I noticed my elderly neighbor Mrs. Johnson having trouble with it, which really concerned me.\n\nOur neighborhood deserves safe infrastructure. Thanks for considering this request from a resident who cares about our community.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI wanted to reach out about the ${issueType} ${location} that I frequently encounter. This has been causing problems for myself and others in the area.\n\nOur neighborhood would really benefit from having this fixed. I appreciate your consideration of this request.\n\n${signoff}`;
       break;
       
     default:
