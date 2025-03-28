@@ -66,7 +66,7 @@ export async function sendEmail(options: {
 /**
  * Normalize an email address from a user input
  */
-export function normalizeEmail(email: string | null): string | null {
+export function normalizeEmail(email: string | null | undefined): string | null {
   if (!email) return null;
   
   // Basic email validation and normalization

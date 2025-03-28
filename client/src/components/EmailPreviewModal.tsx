@@ -86,10 +86,19 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
       const data = await response.json();
       setEmailContent(data.emailBody);
       
-      toast({
-        title: "Tone Updated",
-        description: `Email tone changed to ${tone}`,
-      });
+      // If there's a warning message but the operation still worked
+      if (data.warning) {
+        toast({
+          variant: "default",
+          title: "Tone Updated (Offline Mode)",
+          description: data.warning,
+        });
+      } else {
+        toast({
+          title: "Tone Updated",
+          description: `Email tone changed to ${tone}`,
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",

@@ -109,9 +109,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
-      const regeneratedEmail = await regenerateEmailWithTone(emailBody, tone);
+      const result = await regenerateEmailWithTone(emailBody, tone);
       
-      res.json({ emailBody: regeneratedEmail });
+      // If there's an error message but we still have an email body, return a 200 with both
+      if (result.error && result.emailBody) {
+        return res.json({ 
+          emailBody: result.emailBody,
+          warning: result.error 
+        });
+      }
+      
+      res.json({ emailBody: result.emailBody });
     } catch (error) {
       console.error("Error regenerating email:", error);
       res.status(500).json({ message: "Failed to regenerate email" });
