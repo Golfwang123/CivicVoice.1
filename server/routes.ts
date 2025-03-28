@@ -80,16 +80,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate email template for a given issue
   app.post("/api/generate-email", async (req: Request, res: Response) => {
     try {
-      const { issueType, location, description, urgencyLevel } = req.body;
+      const { 
+        issueType, 
+        location, 
+        description, 
+        urgencyLevel,
+        // Optional customization fields
+        impactDescription,
+        affectedGroups,
+        desiredOutcome,
+        proposedSolution
+      } = req.body;
       
       if (!issueType || !location || !description || !urgencyLevel) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
+      // Create enhanced description if additional details are provided
+      let enhancedDescription = description;
+      
+      if (impactDescription) {
+        enhancedDescription += `\n\nImpact: ${impactDescription}`;
+      }
+      
+      if (affectedGroups) {
+        // Convert snake_case to readable text
+        const groupName = affectedGroups
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        enhancedDescription += `\n\nAffected Groups: ${groupName}`;
+      }
+      
+      if (desiredOutcome) {
+        // Convert snake_case to readable text
+        const outcome = desiredOutcome
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        enhancedDescription += `\n\nDesired Outcome: ${outcome}`;
+      }
+      
+      if (proposedSolution) {
+        enhancedDescription += `\n\nProposed Solution: ${proposedSolution}`;
+      }
+      
       const emailTemplate = await generateEmailTemplate(
         issueType,
         location,
-        description,
+        enhancedDescription,
         urgencyLevel
       );
       

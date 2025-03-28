@@ -28,7 +28,23 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
   const [submittedProject, setSubmittedProject] = useState<Project | null>(null);
   
   // Form state
-  const [formData, setFormData] = useState({
+  // Define FormData type to include additional customization options
+  type FormDataType = {
+    title: string;
+    description: string;
+    issueType: IssueType;
+    location: string;
+    latitude: string;
+    longitude: string;
+    urgencyLevel: UrgencyLevel;
+    contactEmail: string;
+    impactDescription: string;
+    affectedGroups: string;
+    desiredOutcome: string;
+    proposedSolution: string;
+  };
+
+  const [formData, setFormData] = useState<FormDataType>({
     title: "",
     description: "",
     issueType: "" as IssueType,
@@ -37,6 +53,11 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     longitude: "-122.4194",
     urgencyLevel: "medium" as UrgencyLevel,
     contactEmail: "",
+    // Additional customization options
+    impactDescription: "",
+    affectedGroups: "",
+    desiredOutcome: "",
+    proposedSolution: "",
   });
   
   // Email template state
@@ -45,21 +66,95 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     emailSubject: "",
     emailTo: "",
   });
+
+  // Email tone state
+  type EmailTone = "professional" | "formal" | "assertive" | "concerned" | "personal";
+  const [currentTone, setCurrentTone] = useState<EmailTone>("professional");
+  const [isChangingTone, setIsChangingTone] = useState(false);
   
-  // Generate email mutation
-  const generateEmailMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/generate-email", {
+  // Function to get button style based on tone selection
+  const getToneButtonStyle = (tone: EmailTone) => {
+    if (tone === currentTone) {
+      return "bg-primary text-white hover:bg-primary/90";
+    }
+    return "bg-gray-200 text-gray-700 hover:bg-gray-300";
+  };
+  
+  // Handle email tone change
+  const handleToneChange = async (tone: EmailTone) => {
+    if (tone === currentTone || !emailTemplate.emailBody) return;
+    
+    setIsChangingTone(true);
+    try {
+      setCurrentTone(tone);
+      
+      const response = await fetch("/api/regenerate-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          issueType: formData.issueType,
-          location: formData.location,
-          description: formData.description,
-          urgencyLevel: formData.urgencyLevel,
+          emailBody: emailTemplate.emailBody,
+          tone,
         }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to regenerate email");
+      }
+      
+      const data = await response.json();
+      setEmailTemplate(prev => ({
+        ...prev,
+        emailBody: data.emailBody
+      }));
+      
+      // If there's a warning message but the operation still worked
+      if (data.warning) {
+        toast({
+          variant: "default",
+          title: "Tone Updated (Offline Mode)",
+          description: data.warning,
+        });
+      } else {
+        toast({
+          title: "Tone Updated",
+          description: `Email tone changed to ${tone}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to adjust email tone. Please try again.",
+      });
+    } finally {
+      setIsChangingTone(false);
+    }
+  };
+  
+  // Generate email mutation
+  const generateEmailMutation = useMutation({
+    mutationFn: async () => {
+      // Include additional customization fields if they're filled in
+      const payload = {
+        issueType: formData.issueType,
+        location: formData.location,
+        description: formData.description,
+        urgencyLevel: formData.urgencyLevel,
+        // Include optional fields only if they have content
+        ...(formData.impactDescription ? { impactDescription: formData.impactDescription } : {}),
+        ...(formData.affectedGroups ? { affectedGroups: formData.affectedGroups } : {}),
+        ...(formData.desiredOutcome ? { desiredOutcome: formData.desiredOutcome } : {}),
+        ...(formData.proposedSolution ? { proposedSolution: formData.proposedSolution } : {})
+      };
+      
+      const response = await fetch("/api/generate-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
       
       if (!response.ok) {
@@ -155,6 +250,11 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
       longitude: "-122.4194",
       urgencyLevel: "medium" as UrgencyLevel,
       contactEmail: "",
+      // Reset customization fields
+      impactDescription: "",
+      affectedGroups: "",
+      desiredOutcome: "",
+      proposedSolution: "",
     });
     setEmailTemplate({
       emailBody: "",
@@ -162,6 +262,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
       emailTo: "",
     });
     setSubmittedProject(null);
+    setCurrentTone("professional");
     onClose();
   };
   
@@ -302,6 +403,88 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
               </RadioGroup>
             </div>
             
+            {/* Additional customization fields - collapsible section */}
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="flex items-center justify-between cursor-pointer mb-2">
+                <h3 className="text-sm font-medium text-gray-700">Optional Details for Better Email Generation</h3>
+                <i className="fas fa-chevron-down text-gray-500"></i>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="affectedGroups">Who is affected by this issue?</Label>
+                  <Select
+                    onValueChange={(value) => handleSelectChange("affectedGroups", value)}
+                    value={formData.affectedGroups}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select affected groups" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Select affected groups</SelectItem>
+                      <SelectItem value="local_residents">Local Residents</SelectItem>
+                      <SelectItem value="pedestrians">Pedestrians</SelectItem>
+                      <SelectItem value="cyclists">Cyclists</SelectItem>
+                      <SelectItem value="drivers">Drivers/Motorists</SelectItem>
+                      <SelectItem value="children">Children/Students</SelectItem>
+                      <SelectItem value="elderly">Elderly People</SelectItem>
+                      <SelectItem value="disabled">People with Disabilities</SelectItem>
+                      <SelectItem value="businesses">Local Businesses</SelectItem>
+                      <SelectItem value="all">Everyone in the Community</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="impactDescription">How does this issue impact the community?</Label>
+                  <Textarea
+                    id="impactDescription"
+                    name="impactDescription"
+                    value={formData.impactDescription}
+                    onChange={handleInputChange}
+                    rows={2}
+                    placeholder="Explain the negative effects of this issue"
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="desiredOutcome">What outcome are you seeking?</Label>
+                  <Select
+                    onValueChange={(value) => handleSelectChange("desiredOutcome", value)}
+                    value={formData.desiredOutcome}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select desired outcome" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Select desired outcome</SelectItem>
+                      <SelectItem value="repair">Repair existing infrastructure</SelectItem>
+                      <SelectItem value="replace">Replace damaged infrastructure</SelectItem>
+                      <SelectItem value="install">Install new infrastructure</SelectItem>
+                      <SelectItem value="maintain">Regular maintenance</SelectItem>
+                      <SelectItem value="inspect">Professional inspection</SelectItem>
+                      <SelectItem value="plan">Create action plan</SelectItem>
+                      <SelectItem value="other">Other (describe in description)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="proposedSolution">Do you have a proposed solution? (optional)</Label>
+                  <Textarea
+                    id="proposedSolution"
+                    name="proposedSolution"
+                    value={formData.proposedSolution}
+                    onChange={handleInputChange}
+                    rows={2}
+                    placeholder="Suggest how this issue could be resolved"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+            
             {/* Contact info */}
             <div>
               <Label htmlFor="contactEmail">Your Contact Info (optional)</Label>
@@ -392,41 +575,62 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                 
                 <div>
                   <Label className="block text-sm font-medium text-gray-700">Email Tone Adjustment:</Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select a tone to change the style and language of your email
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 relative">
+                    {isChangingTone && (
+                      <div className="absolute inset-0 bg-gray-100/50 flex items-center justify-center rounded-md z-10">
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <p className="mt-2 text-sm text-gray-600">Updating tone...</p>
+                        </div>
+                      </div>
+                    )}
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-primary text-white text-xs rounded-full"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("professional")}`}
+                      onClick={() => handleToneChange("professional")}
+                      disabled={isChangingTone || currentTone === "professional"}
                     >
-                      Professional
+                      <i className="fas fa-briefcase mr-1"></i> Professional
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("formal")}`}
+                      onClick={() => handleToneChange("formal")}
+                      disabled={isChangingTone || currentTone === "formal"}
                     >
-                      Formal
+                      <i className="fas fa-user-tie mr-1"></i> Formal
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("assertive")}`}
+                      onClick={() => handleToneChange("assertive")}
+                      disabled={isChangingTone || currentTone === "assertive"}
                     >
-                      Assertive
+                      <i className="fas fa-exclamation-circle mr-1"></i> Assertive
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("concerned")}`}
+                      onClick={() => handleToneChange("concerned")}
+                      disabled={isChangingTone || currentTone === "concerned"}
                     >
-                      Concerned
+                      <i className="fas fa-heart mr-1"></i> Concerned
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("personal")}`}
+                      onClick={() => handleToneChange("personal")}
+                      disabled={isChangingTone || currentTone === "personal"}
                     >
-                      Personal
+                      <i className="fas fa-user mr-1"></i> Personal
                     </Button>
                   </div>
                 </div>
