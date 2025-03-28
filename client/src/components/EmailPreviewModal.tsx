@@ -15,12 +15,16 @@ interface EmailPreviewModalProps {
   onClose: () => void;
 }
 
+type EmailTone = "professional" | "formal" | "assertive" | "concerned" | "personal";
+
 export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPreviewModalProps) {
   const { toast } = useToast();
   const [emailContent, setEmailContent] = useState(project.emailTemplate);
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [currentTone, setCurrentTone] = useState<EmailTone>("professional");
+  const [isChangingTone, setIsChangingTone] = useState(false);
   
   // Send email mutation
   const sendEmailMutation = useMutation({
@@ -57,15 +61,20 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
   });
   
   // Handle email tone adjustment
-  const handleToneChange = async (tone: string) => {
+  const handleToneChange = async (tone: EmailTone) => {
+    if (tone === currentTone) return;
+    
+    setIsChangingTone(true);
     try {
+      setCurrentTone(tone);
+      
       const response = await fetch("/api/regenerate-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          emailBody: project.emailTemplate,
+          emailBody: emailContent, // Use current content instead of original template
           tone,
         }),
       });
@@ -76,12 +85,19 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
       
       const data = await response.json();
       setEmailContent(data.emailBody);
+      
+      toast({
+        title: "Tone Updated",
+        description: `Email tone changed to ${tone}`,
+      });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to adjust email tone. Please try again.",
       });
+    } finally {
+      setIsChangingTone(false);
     }
   };
   
@@ -102,6 +118,14 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
   // Email validation
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+  
+  // Get button style based on tone
+  const getToneButtonStyle = (tone: EmailTone) => {
+    if (tone === currentTone) {
+      return "bg-primary text-white hover:bg-primary/90";
+    }
+    return "bg-gray-200 text-gray-700 hover:bg-gray-300";
   };
   
   // Render success message
@@ -171,56 +195,77 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
                 
                 <div>
                   <Label className="block text-sm font-medium text-gray-700">Email Body:</Label>
-                  <Textarea
-                    rows={10}
-                    value={emailContent}
-                    onChange={(e) => setEmailContent(e.target.value)}
-                    className="mt-1 bg-white"
-                  />
+                  <div className="relative">
+                    <Textarea
+                      rows={10}
+                      value={emailContent}
+                      onChange={(e) => setEmailContent(e.target.value)}
+                      className="mt-1 bg-white"
+                      disabled={isChangingTone}
+                    />
+                    {isChangingTone && (
+                      <div className="absolute inset-0 bg-gray-100/50 flex items-center justify-center">
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <p className="mt-2 text-sm text-gray-600">Updating tone...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
-                  <Label className="block text-sm font-medium text-gray-700">Email Tone Adjustment:</Label>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Tone Adjustment:
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select a tone to change the style and language of your email
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-primary text-white text-xs rounded-full"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("professional")}`}
                       onClick={() => handleToneChange("professional")}
+                      disabled={isChangingTone || currentTone === "professional"}
                     >
-                      Professional
+                      <i className="fas fa-briefcase mr-1"></i> Professional
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("formal")}`}
                       onClick={() => handleToneChange("formal")}
+                      disabled={isChangingTone || currentTone === "formal"}
                     >
-                      Formal
+                      <i className="fas fa-user-tie mr-1"></i> Formal
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("assertive")}`}
                       onClick={() => handleToneChange("assertive")}
+                      disabled={isChangingTone || currentTone === "assertive"}
                     >
-                      Assertive
+                      <i className="fas fa-exclamation-circle mr-1"></i> Assertive
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("concerned")}`}
                       onClick={() => handleToneChange("concerned")}
+                      disabled={isChangingTone || currentTone === "concerned"}
                     >
-                      Concerned
+                      <i className="fas fa-heart mr-1"></i> Concerned
                     </Button>
                     <Button
                       size="sm"
                       variant={null}
-                      className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300"
+                      className={`px-3 py-1 text-xs rounded-full transition-all ${getToneButtonStyle("personal")}`}
                       onClick={() => handleToneChange("personal")}
+                      disabled={isChangingTone || currentTone === "personal"}
                     >
-                      Personal
+                      <i className="fas fa-user mr-1"></i> Personal
                     </Button>
                   </div>
                 </div>
@@ -259,7 +304,7 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
                 variant="outline"
                 onClick={onClose}
                 className="mr-2"
-                disabled={sendEmailMutation.isPending}
+                disabled={sendEmailMutation.isPending || isChangingTone}
               >
                 Cancel
               </Button>
@@ -267,7 +312,7 @@ export default function EmailPreviewModal({ project, isOpen, onClose }: EmailPre
                 type="button"
                 className="bg-primary hover:bg-primary/90 text-white"
                 onClick={handleSendEmail}
-                disabled={sendEmailMutation.isPending}
+                disabled={sendEmailMutation.isPending || isChangingTone}
               >
                 <i className="fas fa-paper-plane mr-2"></i>
                 {sendEmailMutation.isPending ? "Sending..." : "Send Email"}
