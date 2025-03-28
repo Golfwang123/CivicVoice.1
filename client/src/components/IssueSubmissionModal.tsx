@@ -317,7 +317,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                   <SelectValue placeholder="Select an issue type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="select">Select an issue type</SelectItem>
+                  <SelectItem value="none">Select an issue type</SelectItem>
                   <SelectItem value="crosswalk">Crosswalk Needed</SelectItem>
                   <SelectItem value="pothole">Pothole</SelectItem>
                   <SelectItem value="sidewalk">Sidewalk Damage</SelectItem>
@@ -421,7 +421,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                       <SelectValue placeholder="Select affected groups" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Select affected groups</SelectItem>
+                      <SelectItem value="none">Select affected groups</SelectItem>
                       <SelectItem value="local_residents">Local Residents</SelectItem>
                       <SelectItem value="pedestrians">Pedestrians</SelectItem>
                       <SelectItem value="cyclists">Cyclists</SelectItem>
@@ -458,7 +458,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                       <SelectValue placeholder="Select desired outcome" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Select desired outcome</SelectItem>
+                      <SelectItem value="none">Select desired outcome</SelectItem>
                       <SelectItem value="repair">Repair existing infrastructure</SelectItem>
                       <SelectItem value="replace">Replace damaged infrastructure</SelectItem>
                       <SelectItem value="install">Install new infrastructure</SelectItem>

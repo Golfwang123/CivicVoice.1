@@ -107,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert snake_case to readable text
         const groupName = affectedGroups
           .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
         
         enhancedDescription += `\n\nAffected Groups: ${groupName}`;
@@ -117,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert snake_case to readable text
         const outcome = desiredOutcome
           .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
         
         enhancedDescription += `\n\nDesired Outcome: ${outcome}`;
