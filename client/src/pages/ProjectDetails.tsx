@@ -254,7 +254,7 @@ export default function ProjectDetails() {
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Photo</h2>
                 <div className="relative rounded-md overflow-hidden border border-gray-200">
                   <img 
-                    src={project.photoUrl || project.photoData} 
+                    src={project.photoUrl || project.photoData || ''} 
                     alt="Issue photo" 
                     className="w-full max-h-[400px] object-contain"
                   />

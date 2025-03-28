@@ -32,12 +32,21 @@ export default function MapComponent({
   useEffect(() => {
     if (!mapRef.current || leafletMapRef.current) return;
     
-    // Default view is centered on a general US location
-    const defaultLocation = [37.7749, -122.4194];
-    const initialZoom = 13;
+    // Imperial Valley, California centered location
+    const imperialValleyCenter: L.LatLngTuple = [32.847, -115.566]; // Imperial Valley coordinates
+    const initialZoom = 11;
     
-    // Create the map
-    leafletMapRef.current = L.map(mapRef.current).setView(defaultLocation, initialZoom);
+    // Define bounds for Imperial Valley region (approx coordinates)
+    const southWest: L.LatLngTuple = [32.5, -116.0]; // SW corner of Imperial Valley
+    const northEast: L.LatLngTuple = [33.2, -115.0]; // NE corner of Imperial Valley
+    const imperialValleyBounds = L.latLngBounds(southWest, northEast);
+    
+    // Create the map with max bounds restriction
+    leafletMapRef.current = L.map(mapRef.current, {
+      maxBounds: imperialValleyBounds,
+      maxBoundsViscosity: 1.0, // Prevents dragging outside bounds
+      minZoom: 10 // Prevents zooming out too far
+    }).setView(imperialValleyCenter, initialZoom);
     
     // Add OpenStreetMap tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -60,7 +69,7 @@ export default function MapComponent({
         }).addTo(markersLayerRef.current!);
         
         if (onLocationSelect) {
-          marker.on("dragend", function (e) {
+          marker.on("dragend", function (e: L.LeafletEvent) {
             const position = marker.getLatLng();
             onLocationSelect(position.lat.toString(), position.lng.toString());
           });
@@ -70,7 +79,7 @@ export default function MapComponent({
     
     // Handle clicks on the map if we're in location selection mode
     if (onLocationSelect) {
-      leafletMapRef.current.on("click", function (e) {
+      leafletMapRef.current.on("click", function (e: L.LeafletMouseEvent) {
         const { lat, lng } = e.latlng;
         
         // Clear existing markers
@@ -133,14 +142,30 @@ export default function MapComponent({
     
     // Fit the map to show all markers if we have projects and aren't in selection mode
     if (projects.length > 0 && !onLocationSelect) {
-      const bounds = L.latLngBounds(
-        projects
-          .filter((p) => !isNaN(parseFloat(p.latitude)) && !isNaN(parseFloat(p.longitude)))
-          .map((p) => [parseFloat(p.latitude), parseFloat(p.longitude)])
-      );
+      // Filter out projects with valid coordinates
+      const validProjects = projects
+        .filter((p) => !isNaN(parseFloat(p.latitude)) && !isNaN(parseFloat(p.longitude)));
       
-      if (bounds.isValid()) {
-        leafletMapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      // Check if any valid projects exist
+      if (validProjects.length > 0) {
+        // Create bounds from project coordinates
+        const bounds = L.latLngBounds(
+          validProjects.map((p) => [parseFloat(p.latitude), parseFloat(p.longitude)] as L.LatLngTuple)
+        );
+        
+        // Extend bounds if they're outside Imperial Valley (to keep markers visible but centered on Imperial Valley)
+        // This ensures we always see markers but stay focused on Imperial Valley
+        const southWest: L.LatLngTuple = [32.5, -116.0];
+        const northEast: L.LatLngTuple = [33.2, -115.0];
+        const imperialBounds = L.latLngBounds(southWest, northEast);
+        
+        // Get union of both bounds
+        const unionBounds = imperialBounds.extend(bounds);
+        
+        // Apply bounds with padding
+        if (unionBounds.isValid()) {
+          leafletMapRef.current.fitBounds(unionBounds, { padding: [50, 50] });
+        }
       }
     }
   }, [projects, onLocationSelect]);
