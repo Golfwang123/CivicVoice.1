@@ -8,6 +8,9 @@ import Navbar from "@/components/Navbar";
 import CommunityBoard from "@/pages/CommunityBoard";
 import IssueSubmissionForm from "@/pages/IssueSubmissionForm";
 import ProjectDetails from "@/pages/ProjectDetails";
+import AuthPage from "@/pages/auth-page";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   const { toast } = useToast();
@@ -28,8 +31,9 @@ function Router() {
       <Navbar />
       <Switch>
         <Route path="/" component={CommunityBoard} />
-        <Route path="/submit" component={IssueSubmissionForm} />
+        <ProtectedRoute path="/submit" component={IssueSubmissionForm} />
         <Route path="/projects/:id" component={ProjectDetails} />
+        <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
     </>
@@ -39,8 +43,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

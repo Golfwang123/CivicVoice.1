@@ -29,12 +29,28 @@ export const progressStatusEnum = pgEnum('progress_status', [
   'completed'
 ]);
 
+// Enum for user roles
+export const userRoleEnum = pgEnum('user_role', [
+  'user',
+  'moderator',
+  'admin'
+]);
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
+  fullName: text("full_name"),
+  role: userRoleEnum("role").notNull().default('user'),
+  verified: boolean("verified").notNull().default(false),
+  verificationToken: text("verification_token"),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
+  profilePicture: text("profile_picture"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Projects table
@@ -99,11 +115,24 @@ export const comments = pgTable("comments", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-});
+export const insertUserSchema = createInsertSchema(users)
+  .omit({
+    id: true,
+    verified: true,
+    verificationToken: true,
+    resetPasswordToken: true,
+    resetPasswordExpires: true,
+    createdAt: true,
+    updatedAt: true,
+    role: true,
+  })
+  .extend({
+    password: z.string().min(8).max(100),
+    email: z.string().email(),
+    username: z.string().min(3).max(50),
+    fullName: z.string().min(2).max(100).optional(),
+    profilePicture: z.string().optional(),
+  });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,

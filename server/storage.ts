@@ -12,7 +12,9 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   
   // Project operations
   getAllProjects(): Promise<Project[]>;
@@ -100,9 +102,44 @@ export class MemStorage implements IStorage {
   
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
-    const user: User = { ...insertUser, id };
+    const now = new Date();
+    
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: 'user',
+      verified: false,
+      verificationToken: null,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      fullName: insertUser.fullName || null,
+      profilePicture: insertUser.profilePicture || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
     this.users.set(id, user);
     return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email.toLowerCase() === email.toLowerCase()
+    );
+  }
+  
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { 
+      ...user, 
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
   
   // Project operations
@@ -136,7 +173,10 @@ export class MemStorage implements IStorage {
       progressStatus: 'idea_submitted',
       createdAt: new Date(),
       createdBy: insertProject.createdBy || null,
-      urgencyLevel: insertProject.urgencyLevel || "medium"
+      urgencyLevel: insertProject.urgencyLevel || "medium",
+      contactEmail: insertProject.contactEmail || null,
+      photoUrl: insertProject.photoUrl || null,
+      photoData: insertProject.photoData || null
     };
     
     this.projects.set(id, project);
@@ -386,6 +426,8 @@ export class MemStorage implements IStorage {
       upvotes: 45,
       emailsSent: 38,
       progressStatus: "community_support",
+      photoUrl: null,
+      photoData: null,
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       createdBy: null
     };
@@ -406,6 +448,8 @@ export class MemStorage implements IStorage {
       upvotes: 23,
       emailsSent: 12,
       progressStatus: "idea_submitted",
+      photoUrl: null,
+      photoData: null,
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
       createdBy: null
     };
@@ -426,6 +470,8 @@ export class MemStorage implements IStorage {
       upvotes: 67,
       emailsSent: 52,
       progressStatus: "official_acknowledgment",
+      photoUrl: null,
+      photoData: null,
       createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000), // 21 days ago
       createdBy: null
     };

@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateEmailTemplate, regenerateEmailWithTone } from "./openai";
@@ -6,9 +6,13 @@ import { sendEmail, normalizeEmail } from "./email";
 import { insertProjectSchema, insertEmailSchema, insertUpvoteSchema, insertCommentSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Set up authentication
+  setupAuth(app);
 
   // Get all projects with optional filters
   app.get("/api/projects", async (req: Request, res: Response) => {
