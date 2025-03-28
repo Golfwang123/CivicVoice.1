@@ -54,6 +54,8 @@ export const projects = pgTable("projects", {
   upvotes: integer("upvotes").notNull().default(0),
   emailsSent: integer("emails_sent").notNull().default(0),
   progressStatus: progressStatusEnum("progress_status").notNull().default('idea_submitted'),
+  photoUrl: text("photo_url"), // URL to stored photo (can be null)
+  photoData: text("photo_data"), // Base64 encoded photo data (can be null)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdBy: integer("created_by"), // Optional - can be linked to users table for authenticated users
 });

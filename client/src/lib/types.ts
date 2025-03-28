@@ -28,6 +28,8 @@ export interface Project {
   upvotes: number;
   emailsSent: number;
   progressStatus: ProgressStatus;
+  photoUrl?: string | null;  // URL to the stored photo
+  photoData?: string | null; // Base64 encoded photo data
   createdAt: string;
   createdBy?: number;
 }
@@ -78,6 +80,8 @@ export interface IssueSubmissionData {
   emailTemplate: string;
   emailSubject: string;
   emailRecipient: string;
+  photoUrl?: string | null;
+  photoData?: string | null;
 }
 
 export interface Comment {

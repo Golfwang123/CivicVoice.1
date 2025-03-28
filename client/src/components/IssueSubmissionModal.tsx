@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { IssueType, UrgencyLevel, EmailTemplate, Project } from "@/lib/types";
 import MapComponent from "@/components/MapComponent";
 import EmailPreviewModal from "@/components/EmailPreviewModal";
 import SubmissionSuccessModal from "@/components/SubmissionSuccessModal";
+import { Upload, Image } from "lucide-react";
 
 interface IssueSubmissionModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<SubmissionStep>("details");
   const [submittedProject, setSubmittedProject] = useState<Project | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   // Define FormData type to include additional customization options
@@ -42,6 +44,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     affectedGroups: string;
     desiredOutcome: string;
     proposedSolution: string;
+    photoData: string | null;
   };
 
   const [formData, setFormData] = useState<FormDataType>({
@@ -58,6 +61,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     affectedGroups: "",
     desiredOutcome: "",
     proposedSolution: "",
+    photoData: null,
   });
   
   // Email template state
@@ -210,6 +214,54 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
   };
   
+  // Handle photo upload button click
+  const handlePhotoUploadClick = () => {
+    // Trigger the hidden file input click
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+      });
+      return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please upload an image file (JPG, PNG, etc).",
+      });
+      return;
+    }
+    
+    // Read the file and convert to base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64String = event.target?.result as string;
+      setFormData((prev) => ({ ...prev, photoData: base64String }));
+      
+      toast({
+        title: "Photo uploaded",
+        description: "Your photo has been attached to the issue report.",
+      });
+    };
+    
+    reader.readAsDataURL(file);
+  };
+  
   // Handle form submission to generate email
   const handleGenerateEmail = (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,6 +307,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
       affectedGroups: "",
       desiredOutcome: "",
       proposedSolution: "",
+      photoData: null,
     });
     setEmailTemplate({
       emailBody: "",
@@ -498,6 +551,57 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                 className="mt-1"
               />
               <p className="mt-2 text-sm text-gray-500">We'll use this to send you updates about this issue.</p>
+            </div>
+            
+            {/* Photo upload */}
+            <div>
+              <Label htmlFor="photoUpload">Upload a Photo (optional)</Label>
+              <div className="mt-2">
+                <input
+                  type="file"
+                  id="photoUpload"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                
+                {formData.photoData ? (
+                  <div className="relative mt-2">
+                    <div className="relative rounded-md overflow-hidden border border-gray-200">
+                      <img 
+                        src={formData.photoData} 
+                        alt="Issue photo" 
+                        className="w-full h-40 object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 opacity-80"
+                        onClick={() => setFormData(prev => ({ ...prev, photoData: null }))}
+                      >
+                        <i className="fas fa-times"></i>
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-600">Photo added successfully. You can remove it using the X button.</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-6 cursor-pointer"
+                       onClick={handlePhotoUploadClick}>
+                    <div className="space-y-1 text-center">
+                      <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <span className="font-medium text-primary hover:underline">Upload a photo</span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-gray-500">Adding a photo helps provide visual context to your issue report.</p>
             </div>
             
             {/* Submit button */}

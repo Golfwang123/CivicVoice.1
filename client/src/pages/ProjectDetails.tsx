@@ -248,6 +248,20 @@ export default function ProjectDetails() {
               <p className="text-gray-700">{project.description}</p>
             </div>
             
+            {/* Photo (if available) */}
+            {(project.photoUrl || project.photoData) && (
+              <div className="mt-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">Photo</h2>
+                <div className="relative rounded-md overflow-hidden border border-gray-200">
+                  <img 
+                    src={project.photoUrl || project.photoData} 
+                    alt="Issue photo" 
+                    className="w-full max-h-[400px] object-contain"
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="col-span-1">
                 <h3 className="text-sm font-medium text-gray-500">Location</h3>
