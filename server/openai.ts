@@ -177,45 +177,46 @@ export async function regenerateEmailWithTone(
 
 // Fallback function to adjust email tone without using OpenAI
 function applyFallbackToneAdjustment(email: string, tone: string): string {
-  // Extract parts of the email
+  // Extract parts of the email - we'll use these to construct a completely new email
+  
+  // Extract the salutation (Dear...)
   const salutationMatch = email.match(/^(Dear.*?)(?=\n)/);
   const salutation = salutationMatch ? salutationMatch[0] : "Dear City Official";
   
+  // Extract the signoff (Sincerely...)
   const signoffMatch = email.match(/\n(Sincerely|Regards|Thank you|Best regards|Yours truly|Respectfully).*$/);
   const signoff = signoffMatch ? signoffMatch[0].trim() : "\n\nSincerely,\n[Your Name]";
   
-  // Get the body text between salutation and signoff
-  let bodyText = email;
-  if (salutationMatch) {
-    bodyText = bodyText.replace(salutationMatch[0], "");
-  }
-  if (signoffMatch) {
-    bodyText = bodyText.replace(signoffMatch[0], "");
-  }
-  bodyText = bodyText.trim();
+  // Extract key information from the email to preserve in the tone-adjusted version
+  const locationMatch = email.match(/\b(?:at|near|on|in|by)\s+([A-Za-z0-9\s\.]+(?:Street|Avenue|Road|Place|Blvd|Boulevard|Lane|Drive|Way|Intersection|Park|Plaza|Square|Ave\.|Rd\.|St\.|Dr\.))/i);
+  const location = locationMatch ? locationMatch[0] : "in our community";
   
-  // Apply tone adjustments based on the requested tone
+  // Extract type of issue from the original email
+  const issueTypeMatch = email.match(/\b(?:pothole|crosswalk|sidewalk|streetlight|traffic light|sign|infrastructure|safety hazard|drainage|flooding|accessibility)\b/i);
+  const issueType = issueTypeMatch ? issueTypeMatch[0].toLowerCase() : "infrastructure issue";
+  
+  // Apply tone adjustments based on the requested tone - completely different emails
   let adjustedEmail = "";
   
   switch(tone.toLowerCase()) {
     case "professional":
-      adjustedEmail = `${salutation},\n\nI am writing to bring to your attention a matter of community infrastructure that requires your department's consideration.\n\n${bodyText}\n\nI would appreciate your prompt attention to this matter. Please feel free to contact me if you require any additional information.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI am writing to bring to your attention a matter of community infrastructure that requires your department's consideration. There is a ${issueType} ${location} that needs to be addressed.\n\nThis issue presents a potential safety concern for local residents and visitors. Proper maintenance of our community infrastructure is essential for ensuring the safety and well-being of citizens.\n\nI would appreciate your prompt attention to this matter. Please feel free to contact me if you require any additional information or would like to discuss this further.\n\n${signoff}`;
       break;
       
     case "formal":
-      adjustedEmail = `${salutation},\n\nI am writing to formally request your department's attention regarding an infrastructure matter in our community.\n\n${bodyText}\n\nI trust that your office will address this issue with the appropriate consideration. I remain available should further information be required.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI am writing to formally request your department's attention regarding a ${issueType} ${location}.\n\nThe current condition of this infrastructure element does not meet community standards and may present liability concerns for the municipality. It is my understanding that such matters fall under your department's purview.\n\nI trust that your office will address this issue with the appropriate consideration and in accordance with municipal protocols. I remain available should further information be required.\n\n${signoff}`;
       break;
       
     case "assertive":
-      adjustedEmail = `${salutation},\n\nI am writing to request immediate attention to an important infrastructure issue that needs to be addressed without delay.\n\n${bodyText}\n\nI expect this matter to be addressed promptly, as it affects many community members on a daily basis. I look forward to hearing about the concrete steps that will be taken to resolve this issue.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI am writing to request immediate attention to the ${issueType} ${location}. This issue needs to be addressed without delay.\n\nThis situation has persisted for some time and poses an unacceptable risk to public safety. Multiple community members have expressed concerns about this matter, and it requires prompt resolution.\n\nI expect this matter to be addressed within the next two weeks, as it affects many community members on a daily basis. I look forward to hearing about the concrete steps that will be taken to resolve this issue and a timeline for completion.\n\n${signoff}`;
       break;
       
     case "concerned":
-      adjustedEmail = `${salutation},\n\nI am deeply concerned about an infrastructure issue in our community that is affecting residents' safety and quality of life.\n\n${bodyText}\n\nAs a concerned citizen, I am hopeful that your department will consider the human impact of this issue and take swift action. Many community members, including families with children and elderly residents, are affected by this daily.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI am deeply concerned about the ${issueType} ${location} that is affecting residents' safety and quality of life in our neighborhood.\n\nEvery day, I witness fellow residents, including elderly individuals and parents with young children, struggling to navigate around this hazard. I worry that someone could be seriously injured if this issue isn't resolved soon.\n\nAs a concerned citizen, I am hopeful that your department will consider the human impact of this issue and take swift action. This isn't merely an infrastructure problem—it's about protecting our community members and improving their daily lives.\n\n${signoff}`;
       break;
       
     case "personal":
-      adjustedEmail = `${salutation},\n\nI wanted to reach out about something in our neighborhood that's been on my mind lately.\n\n${bodyText}\n\nThis matters to me personally because I walk/drive through this area daily, and I've seen how it affects our neighbors too. I appreciate you taking the time to consider this request from a local resident who cares deeply about our community.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI wanted to reach out about the ${issueType} ${location} that's been on my mind lately.\n\nAs someone who passes through this area frequently, I've noticed how this issue affects not just me but many of my neighbors as well. Just last week, I saw an elderly neighbor struggling because of this problem, which made me realize how important it is to address this.\n\nThis matters to me personally because our community deserves safe and well-maintained infrastructure. I appreciate you taking the time to consider this request from a local resident who cares deeply about making our neighborhood better for everyone.\n\n${signoff}`;
       break;
       
     default:

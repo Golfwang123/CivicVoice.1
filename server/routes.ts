@@ -143,13 +143,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use the sender's email if provided, otherwise use a default
       const from = normalizeEmail(validatedData.senderEmail) || "noreply@civicvoice.org";
+      // Make sure senderName is a string if present, otherwise undefined
+      const senderName = validatedData.senderName ? String(validatedData.senderName) : undefined;
       
       const result = await sendEmail({
         from,
         to: project.emailRecipient,
         subject: project.emailSubject,
         text: emailContent,
-        senderName: validatedData.senderName
+        senderName
       });
       
       if (!result.success) {
