@@ -17,11 +17,11 @@ export async function generateEmailTemplate(
       messages: [
         {
           role: "system",
-          content: "You are an assistant helping citizens write professional emails to local officials about infrastructure issues that need attention. Generate clear, concise, and persuasive emails based on the issue details provided. Include a subject line and determine the most appropriate municipal department to address the email to.",
+          content: "You are an assistant helping citizens write brief, friendly emails to local officials about infrastructure issues. Create short, personable emails that sound like they're written by a real person, not a robot. Avoid overly formal language and keep the tone conversational. Limit emails to 3-4 short paragraphs maximum. Include a subject line and determine the most appropriate municipal department to address the email to.",
         },
         {
           role: "user",
-          content: `Please write a professional email to a local city official requesting attention to a ${issueType} issue at ${location}. The urgency level is ${urgencyLevel}. Here's a description of the issue: "${description}". Format your response as JSON with fields: emailSubject, emailTo (department email), and emailBody.`,
+          content: `Please write a friendly, conversational email to a local city official about a ${issueType} issue at ${location}. The urgency level is ${urgencyLevel}. Here's a description of the issue: "${description}". Keep it brief and natural-sounding. Format your response as JSON with fields: emailSubject, emailTo (department email), and emailBody.`,
         },
       ],
       response_format: { type: "json_object" },
@@ -87,10 +87,10 @@ function getFallbackEmailTemplate(
   };
 
   const issueNames: Record<string, string> = {
-    crosswalk: "crosswalk installation",
-    pothole: "pothole repair",
-    sidewalk: "sidewalk repair",
-    streetlight: "street light installation",
+    crosswalk: "crosswalk",
+    pothole: "pothole",
+    sidewalk: "sidewalk",
+    streetlight: "streetlight",
     other: "infrastructure issue"
   };
 
@@ -98,23 +98,21 @@ function getFallbackEmailTemplate(
   const department = departments[issueType] || "City Official";
   const emailTo = departmentEmails[issueType] || "cityhall@cityname.gov";
   
-  const emailSubject = `Request for ${issueName.charAt(0).toUpperCase() + issueName.slice(1)} at ${location}`;
+  const emailSubject = `${location} ${issueName} needs attention`;
   
+  // Create a more personable, shorter email template
   const emailBody = `Dear ${department},
 
-I am writing to request your attention to a ${urgencyLevel} priority ${issueName} needed at ${location}. 
+I'm writing about a ${issueName} at ${location} that needs your attention. ${urgencyLevel === 'high' ? "This is an urgent safety issue." : ""}
 
 ${description}
 
-This issue affects the daily lives of many residents in our community and addressing it would greatly improve local infrastructure and safety.
+Many residents use this area daily, and fixing this would make our neighborhood safer and more accessible.
 
-I would appreciate your department's consideration of this request. Please feel free to contact me if you require any additional details or community input regarding this matter.
+Could someone from your office look into this soon? I'm happy to provide more details if needed.
 
-Thank you for your attention to this important concern.
-
-Sincerely,
-[Your Name]
-[Optional Contact Information]`;
+Thanks for your help,
+[Your Name]`;
 
   return {
     emailBody,
@@ -142,11 +140,11 @@ export async function regenerateEmailWithTone(
       messages: [
         {
           role: "system",
-          content: `You are an assistant helping citizens write professional emails to local officials. You'll be given an existing email and asked to rewrite it with a ${tone} tone while preserving the core message and issue details.`,
+          content: `You are an assistant helping citizens write brief, friendly emails to local officials. You'll be given an existing email and asked to rewrite it with a ${tone} tone while preserving the core message and issue details. Make the email sound like it was written by a real person, not a robot. Keep it short (3-4 paragraphs max) and conversational. Avoid overly formal language unless specifically requested.`,
         },
         {
           role: "user",
-          content: `Please rewrite this email with a ${tone} tone while keeping the same basic information and request:\n\n${originalEmail}`,
+          content: `Please rewrite this email with a ${tone} tone. Keep it short, friendly, and natural-sounding while maintaining the same basic information about the issue:\n\n${originalEmail}`,
         },
       ],
       temperature: 0.7,
@@ -195,28 +193,28 @@ function applyFallbackToneAdjustment(email: string, tone: string): string {
   const issueTypeMatch = email.match(/\b(?:pothole|crosswalk|sidewalk|streetlight|traffic light|sign|infrastructure|safety hazard|drainage|flooding|accessibility)\b/i);
   const issueType = issueTypeMatch ? issueTypeMatch[0].toLowerCase() : "infrastructure issue";
   
-  // Apply tone adjustments based on the requested tone - completely different emails
+  // Apply tone adjustments - shorter, more personable emails that sound like a real person
   let adjustedEmail = "";
   
   switch(tone.toLowerCase()) {
     case "professional":
-      adjustedEmail = `${salutation},\n\nI am writing to bring to your attention a matter of community infrastructure that requires your department's consideration. There is a ${issueType} ${location} that needs to be addressed.\n\nThis issue presents a potential safety concern for local residents and visitors. Proper maintenance of our community infrastructure is essential for ensuring the safety and well-being of citizens.\n\nI would appreciate your prompt attention to this matter. Please feel free to contact me if you require any additional information or would like to discuss this further.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'm writing about the ${issueType} ${location} that needs attention. This is creating safety concerns for residents in the area.\n\nCould your department look into this soon? I'd be happy to provide more details if needed.\n\n${signoff}`;
       break;
       
     case "formal":
-      adjustedEmail = `${salutation},\n\nI am writing to formally request your department's attention regarding a ${issueType} ${location}.\n\nThe current condition of this infrastructure element does not meet community standards and may present liability concerns for the municipality. It is my understanding that such matters fall under your department's purview.\n\nI trust that your office will address this issue with the appropriate consideration and in accordance with municipal protocols. I remain available should further information be required.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'd like to request your department's attention to a ${issueType} ${location}.\n\nThis issue falls under your department's responsibility and should be addressed according to city standards. I'm available to provide additional information if needed.\n\n${signoff}`;
       break;
       
     case "assertive":
-      adjustedEmail = `${salutation},\n\nI am writing to request immediate attention to the ${issueType} ${location}. This issue needs to be addressed without delay.\n\nThis situation has persisted for some time and poses an unacceptable risk to public safety. Multiple community members have expressed concerns about this matter, and it requires prompt resolution.\n\nI expect this matter to be addressed within the next two weeks, as it affects many community members on a daily basis. I look forward to hearing about the concrete steps that will be taken to resolve this issue and a timeline for completion.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nThe ${issueType} ${location} needs immediate attention. This has been a problem for a while now and poses real safety risks.\n\nMany neighbors have complained about this issue. We need this fixed within the next two weeks. What steps will your department take to resolve this?\n\n${signoff}`;
       break;
       
     case "concerned":
-      adjustedEmail = `${salutation},\n\nI am deeply concerned about the ${issueType} ${location} that is affecting residents' safety and quality of life in our neighborhood.\n\nEvery day, I witness fellow residents, including elderly individuals and parents with young children, struggling to navigate around this hazard. I worry that someone could be seriously injured if this issue isn't resolved soon.\n\nAs a concerned citizen, I am hopeful that your department will consider the human impact of this issue and take swift action. This isn't merely an infrastructure problem—it's about protecting our community members and improving their daily lives.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI'm worried about the ${issueType} ${location} in our neighborhood. I've seen seniors and parents with strollers struggling to navigate around it.\n\nSomeone could get hurt if this isn't fixed soon. Please consider how this affects our community's daily lives and safety.\n\n${signoff}`;
       break;
       
     case "personal":
-      adjustedEmail = `${salutation},\n\nI wanted to reach out about the ${issueType} ${location} that's been on my mind lately.\n\nAs someone who passes through this area frequently, I've noticed how this issue affects not just me but many of my neighbors as well. Just last week, I saw an elderly neighbor struggling because of this problem, which made me realize how important it is to address this.\n\nThis matters to me personally because our community deserves safe and well-maintained infrastructure. I appreciate you taking the time to consider this request from a local resident who cares deeply about making our neighborhood better for everyone.\n\n${signoff}`;
+      adjustedEmail = `${salutation},\n\nI wanted to reach out about the ${issueType} ${location} that I pass by every day. Last week, I noticed my elderly neighbor Mrs. Johnson having trouble with it, which really concerned me.\n\nOur neighborhood deserves safe infrastructure. Thanks for considering this request from a resident who cares about our community.\n\n${signoff}`;
       break;
       
     default:
