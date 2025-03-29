@@ -41,7 +41,7 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <span className="font-bold text-xl text-gray-800">Imperial Valley <span className="text-primary">CivicVoice</span></span>
+              <span className="font-bold text-xl text-gray-800"><span className="text-primary">Civic</span>Voice</span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link href="/" className={`${location === '/' ? 'border-primary text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>

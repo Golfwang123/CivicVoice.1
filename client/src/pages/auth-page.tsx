@@ -75,8 +75,8 @@ export default function AuthPage() {
       {/* Form section */}
       <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
-          <h1 className="text-3xl font-bold mb-6 text-primary">
-            Imperial Valley Civic Voice
+          <h1 className="text-3xl font-bold mb-6">
+            <span className="text-primary">Civic</span>Voice
           </h1>
 
           <Tabs defaultValue="login" value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
@@ -233,7 +233,7 @@ export default function AuthPage() {
         <div className="flex flex-col justify-center h-full p-12 text-white">
           <h2 className="text-4xl font-bold mb-4">Empower Your Community</h2>
           <p className="text-lg mb-6">
-            Join the Imperial Valley Civic Voice platform to report and track local infrastructure issues, collaborate with neighbors, and advocate for positive change in your community.
+            Join the Civic Voice platform to report and track local infrastructure issues, collaborate with neighbors, and advocate for positive change in your community.
           </p>
           <ul className="space-y-2">
             <li className="flex items-center">
