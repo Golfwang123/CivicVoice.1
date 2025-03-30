@@ -210,10 +210,32 @@ export async function analyzePhotoForIssueType(
     };
   } catch (error) {
     console.error("Error analyzing photo with OpenAI:", error);
+    
+    // Extract more specific error information
+    let errorMessage = "Unable to analyze the image.";
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check for rate limiting or quota exceeded errors
+      if (error.message.includes("429") || error.message.includes("quota")) {
+        errorMessage = "OpenAI API rate limit exceeded or quota used up. Please try again later.";
+      }
+      // Check for invalid API key
+      else if (error.message.includes("401") || error.message.includes("authentication")) {
+        errorMessage = "Invalid OpenAI API key. Please check your API key configuration.";
+      }
+      // Check for invalid image format
+      else if (error.message.includes("image") && error.message.includes("format")) {
+        errorMessage = "Invalid image format. Please upload a valid image file.";
+      }
+    }
+    
+    console.log("Detailed error message:", errorMessage);
+    
     return {
       issueType: "other",
       confidence: 0,
-      description: "Unable to analyze the image. Please manually select the issue type."
+      description: `Analysis error: ${errorMessage}. Please manually select the issue type.`
     };
   }
 }

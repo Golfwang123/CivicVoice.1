@@ -58,23 +58,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analyze photo to determine issue type
   app.post("/api/analyze-photo", async (req: Request, res: Response) => {
     try {
+      console.log("Received photo analysis request");
       const { photoData } = req.body;
       
       if (!photoData) {
+        console.log("Missing photo data in request");
         return res.status(400).json({ message: "Photo data is required" });
       }
       
       // Remove data:image/jpeg;base64, prefix if present
       const base64Data = photoData.replace(/^data:image\/\w+;base64,/, "");
       
+      // Log that we're processing the request
+      console.log("Processing photo for analysis, data length:", base64Data.length);
+      
       // Analyze the photo using OpenAI Vision
       const analysis = await analyzePhotoForIssueType(base64Data);
       
+      console.log("Photo analysis completed successfully:", analysis);
       res.json(analysis);
     } catch (error) {
       console.error("Error analyzing photo:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ 
-        message: "Error analyzing photo",
+        message: `Error analyzing photo: ${errorMessage}`,
         issueType: "other",
         confidence: 0,
         description: "Unable to analyze the image. Please manually select the issue type."

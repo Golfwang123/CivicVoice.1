@@ -315,21 +315,19 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
       // Remove the data:image/jpeg;base64, prefix before sending
       const imageData = base64Image.split(',')[1];
       
-      const response = await fetch('/api/analyze-photo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          photoData: imageData 
-        }),
+      // Use apiRequest from queryClient instead of fetch
+      const response = await apiRequest('POST', '/api/analyze-photo', { 
+        photoData: imageData 
       });
       
       if (!response.ok) {
-        throw new Error('Failed to analyze photo');
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`Failed to analyze photo: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('Photo analysis result:', data);
       
       // Update form with detected issue type if available
       if (data.issueType) {
