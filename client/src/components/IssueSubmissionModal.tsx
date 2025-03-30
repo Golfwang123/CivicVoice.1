@@ -18,12 +18,13 @@ import { Upload, Image, Camera, Loader2 } from "lucide-react";
 interface IssueSubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPhotoData?: string | null;
 }
 
 // Steps in the submission process
 type SubmissionStep = "details" | "email" | "success";
 
-export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissionModalProps) {
+export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData }: IssueSubmissionModalProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<SubmissionStep>("details");
   const [submittedProject, setSubmittedProject] = useState<Project | null>(null);
@@ -61,7 +62,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     affectedGroups: "",
     desiredOutcome: "",
     proposedSolution: "",
-    photoData: null,
+    photoData: initialPhotoData || null,
   });
   
   // Photo analysis state
@@ -79,6 +80,17 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
   type EmailTone = "professional" | "formal" | "assertive" | "concerned" | "personal";
   const [currentTone, setCurrentTone] = useState<EmailTone>("professional");
   const [isChangingTone, setIsChangingTone] = useState(false);
+  
+  // Analyze initial photo if provided
+  useEffect(() => {
+    if (initialPhotoData) {
+      toast({
+        title: "Photo detected",
+        description: "Analyzing your photo...",
+      });
+      analyzePhotoWithAI(initialPhotoData);
+    }
+  }, [initialPhotoData, toast]);
   
   // Function to get button style based on tone selection
   const getToneButtonStyle = (tone: EmailTone) => {
@@ -272,7 +284,7 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
         
         toast({
           title: "Photo Analysis Complete",
-          description: `We've detected this issue as: ${data.issueType.replace(/^\w/, c => c.toUpperCase()).replace('_', ' ')}`,
+          description: `We've detected this issue as: ${data.issueType.replace(/^\w/, (c: string) => c.toUpperCase()).replace('_', ' ')}`,
         });
       } else {
         toast({
@@ -322,10 +334,14 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     try {
       const exifData = await extractExifData(file);
       if (exifData.lat && exifData.lng) {
+        // Make sure we have proper string values for lat/lng
+        const latitude = String(exifData.lat);
+        const longitude = String(exifData.lng);
+        
         setFormData(prev => ({
           ...prev,
-          latitude: exifData.lat,
-          longitude: exifData.lng
+          latitude,
+          longitude
         }));
         
         toast({
