@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Project, EmailSubmission } from "@/lib/types";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EmailPreviewModalProps {
   project: Project;

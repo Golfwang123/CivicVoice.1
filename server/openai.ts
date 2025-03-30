@@ -1,7 +1,15 @@
 import OpenAI from "openai";
 
+// Debug statement to check if the API key is loaded (masking it for security)
+const apiKey = process.env.OPENAI_API_KEY;
+console.log("OpenAI API Key status:", 
+  apiKey ? 
+  `Key loaded (starts with ${apiKey.substring(0, 3)}...)` : 
+  "No API key found"
+);
+
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || "sk-dummy-key-for-development"
+  apiKey: apiKey || "sk-dummy-key-for-development"
 });
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -11,7 +19,17 @@ export async function generateEmailTemplate(
   description: string,
   urgencyLevel: string
 ): Promise<{ emailBody: string; emailSubject: string; emailTo: string }> {
+  // Check if we need to use fallback due to lack of API key or account issues
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey === "sk-dummy-key-for-development") {
+    console.log("Using fallback email template due to missing API key");
+    return getFallbackEmailTemplate(issueType, location, description, urgencyLevel);
+  }
+
   try {
+    // Log that we're attempting to generate an email
+    console.log("Attempting to generate email template with OpenAI for issue:", issueType);
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -143,6 +161,8 @@ export async function analyzePhotoForIssueType(
         description: "Unable to analyze image. Please select the issue type manually."
       };
     }
+    
+    console.log("Attempting to analyze photo with OpenAI API...");
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
@@ -211,6 +231,8 @@ export async function regenerateEmailWithTone(
         emailBody: applyFallbackToneAdjustment(originalEmail, tone),
       };
     }
+    
+    console.log(`Attempting to regenerate email with tone: ${tone} using OpenAI API...`);
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

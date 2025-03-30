@@ -7,12 +7,53 @@ import { insertProjectSchema, insertEmailSchema, insertUpvoteSchema, insertComme
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth } from "./auth";
+import OpenAI from "openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // Set up authentication
   setupAuth(app);
+  
+  // Test endpoint for OpenAI API
+  app.get("/api/test-openai", async (req: Request, res: Response) => {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      console.log("API Key available for testing:", apiKey ? "Yes (begins with " + apiKey.substring(0, 3) + "...)" : "No");
+      
+      // Create a new OpenAI instance directly
+      const openai = new OpenAI({
+        apiKey: apiKey || "sk-dummy-key-for-development"
+      });
+      
+      // Simple test call
+      console.log("Making test call to OpenAI API...");
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "user", content: "Say 'OpenAI API is working!'" }
+        ],
+      });
+      
+      console.log("OpenAI API response:", response);
+      
+      res.json({
+        status: "success",
+        message: "OpenAI API test completed",
+        response: response.choices[0].message.content,
+        usage: response.usage
+      });
+    } catch (error) {
+      console.error("OpenAI API test error:", error);
+      // Handle error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({
+        status: "error",
+        message: "OpenAI API test failed",
+        error: errorMessage
+      });
+    }
+  });
 
   // Analyze photo to determine issue type
   app.post("/api/analyze-photo", async (req: Request, res: Response) => {
