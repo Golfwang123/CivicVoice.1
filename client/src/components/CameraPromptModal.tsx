@@ -230,14 +230,7 @@ export default function CameraPromptModal({
           </div>
         )}
         
-        <div className="flex justify-between pt-4 border-t">
-          <Button
-            variant="ghost"
-            onClick={onSkip}
-          >
-            Skip for now
-          </Button>
-          
+        <div className="flex justify-end pt-4 border-t">
           <Button
             variant="default"
             className="flex items-center gap-1"
