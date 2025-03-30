@@ -42,6 +42,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<User | null, Error>({
     queryKey: ["/api/user"],
     queryFn: async () => {
+      // Check for developer user in localStorage first
+      const devUserJson = localStorage.getItem('devUser');
+      if (devUserJson) {
+        try {
+          const devUser = JSON.parse(devUserJson);
+          // Return as User type
+          return devUser as User;
+        } catch (e) {
+          // If JSON parsing fails, remove the invalid data
+          localStorage.removeItem('devUser');
+        }
+      }
+      
+      // If no dev user, proceed with regular authentication
       try {
         const res = await apiRequest("GET", "/api/user");
         return await res.json();
@@ -106,9 +120,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-      // Remove token from localStorage
+      try {
+        // Try regular logout 
+        await apiRequest("POST", "/api/logout");
+      } catch (e) {
+        // Ignore errors on logout api call
+        console.log("Regular logout failed, proceeding with local cleanup");
+      }
+      // Remove tokens and dev user from localStorage
       localStorage.removeItem("authToken");
+      localStorage.removeItem("devUser");
     },
     onSuccess: () => {
       // Clear user data from the cache

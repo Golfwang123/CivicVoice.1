@@ -130,6 +130,29 @@ export default function AuthPage() {
                       "Login"
                     )}
                   </Button>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        // Set a fake user in local storage and redirect
+                        localStorage.setItem('devUser', JSON.stringify({
+                          id: 9999,
+                          username: 'developer',
+                          email: 'dev@example.com',
+                          role: 'admin'
+                        }));
+                        window.location.href = '/';
+                      }}
+                    >
+                      Developer Access
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Bypass login for development and testing purposes only.
+                    </p>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
