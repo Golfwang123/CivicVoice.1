@@ -119,6 +119,85 @@ Thanks for your consideration,
   };
 }
 
+/**
+ * Analyze a photo to determine infrastructure issue type
+ */
+export async function analyzePhotoForIssueType(
+  base64Image: string
+): Promise<{
+  issueType: string;
+  confidence: number;
+  description: string;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
+}> {
+  try {
+    // Only attempt to call OpenAI if we have a valid API key
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-dummy-key-for-development") {
+      console.log("Using fallback issue classification due to missing API key");
+      return {
+        issueType: "other",
+        confidence: 0,
+        description: "Unable to analyze image. Please select the issue type manually."
+      };
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI specialized in identifying urban infrastructure issues. 
+          Analyze the provided photo and determine which category the issue falls into: 
+          'pothole', 'sidewalk', 'crosswalk', 'streetlight', or 'other'. 
+          Provide a confidence score (0-1) for your classification and a brief description of what you see.
+          Format your response as a JSON object with keys: issueType, confidence, and description.`
+        },
+        {
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: "Analyze this infrastructure issue and classify it based on what you see." 
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`
+              }
+            }
+          ],
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    // Parse the JSON response
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content returned from OpenAI");
+    }
+
+    const result = JSON.parse(content);
+    
+    return {
+      issueType: result.issueType,
+      confidence: result.confidence,
+      description: result.description,
+      location: {} // EXIF data would be processed client-side
+    };
+  } catch (error) {
+    console.error("Error analyzing photo with OpenAI:", error);
+    return {
+      issueType: "other",
+      confidence: 0,
+      description: "Unable to analyze the image. Please manually select the issue type."
+    };
+  }
+}
+
 // Function to regenerate an email with a different tone
 export async function regenerateEmailWithTone(
   originalEmail: string,

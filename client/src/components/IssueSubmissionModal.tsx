@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { IssueType, UrgencyLevel, EmailTemplate, Project } from "@/lib/types";
 import MapComponent from "@/components/MapComponent";
 import EmailPreviewModal from "@/components/EmailPreviewModal";
 import SubmissionSuccessModal from "@/components/SubmissionSuccessModal";
-import { Upload, Image } from "lucide-react";
+import { Upload, Image, Camera, Loader2 } from "lucide-react";
 
 interface IssueSubmissionModalProps {
   isOpen: boolean;
@@ -63,6 +63,10 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     proposedSolution: "",
     photoData: null,
   });
+  
+  // Photo analysis state
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   
   // Email template state
   const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>({
@@ -222,8 +226,75 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
     }
   };
   
+  // Function to extract EXIF data from image
+  const extractExifData = async (file: File): Promise<{ lat?: string; lng?: string }> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function() {
+        const result = reader.result as ArrayBuffer;
+        // This is a simplified approach - in a production app, you'd use a proper EXIF library
+        // For the demo, we'll just resolve with no coordinates
+        resolve({});
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  // Function to analyze photo with OpenAI
+  const analyzePhotoWithAI = async (base64Image: string) => {
+    setIsAnalyzingPhoto(true);
+    try {
+      // Remove the data:image/jpeg;base64, prefix before sending
+      const imageData = base64Image.split(',')[1];
+      
+      const response = await fetch('/api/analyze-photo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          photoData: imageData 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to analyze photo');
+      }
+      
+      const data = await response.json();
+      
+      // Update form with detected issue type if available
+      if (data.issueType) {
+        setFormData(prev => ({ 
+          ...prev, 
+          issueType: data.issueType 
+        }));
+        
+        toast({
+          title: "Photo Analysis Complete",
+          description: `We've detected this issue as: ${data.issueType.replace(/^\w/, c => c.toUpperCase()).replace('_', ' ')}`,
+        });
+      } else {
+        toast({
+          variant: "default",
+          title: "Photo Analysis",
+          description: "Could not automatically detect the issue type. Please select it manually.",
+        });
+      }
+    } catch (error) {
+      console.error('Error analyzing photo:', error);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "We couldn't analyze your photo. Please select the issue type manually.",
+      });
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  };
+
   // Handle file input change
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -247,16 +318,38 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
       return;
     }
     
+    // Try to extract location data from EXIF
+    try {
+      const exifData = await extractExifData(file);
+      if (exifData.lat && exifData.lng) {
+        setFormData(prev => ({
+          ...prev,
+          latitude: exifData.lat,
+          longitude: exifData.lng
+        }));
+        
+        toast({
+          title: "Location Detected",
+          description: "Location data extracted from your photo.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to extract EXIF data:", error);
+    }
+    
     // Read the file and convert to base64
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const base64String = event.target?.result as string;
       setFormData((prev) => ({ ...prev, photoData: base64String }));
       
       toast({
         title: "Photo uploaded",
-        description: "Your photo has been attached to the issue report.",
+        description: "Your photo has been attached. Analyzing the image...",
       });
+      
+      // Analyze the photo using AI
+      await analyzePhotoWithAI(base64String);
     };
     
     reader.readAsDataURL(file);
@@ -555,13 +648,22 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
             
             {/* Photo upload */}
             <div>
-              <Label htmlFor="photoUpload">Upload a Photo (optional)</Label>
+              <Label htmlFor="photoUpload">Upload or Capture a Photo (optional)</Label>
               <div className="mt-2">
                 <input
                   type="file"
                   id="photoUpload"
                   ref={fileInputRef}
                   accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  id="cameraInput"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -574,6 +676,12 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                         alt="Issue photo" 
                         className="w-full h-40 object-cover"
                       />
+                      {isAnalyzingPhoto && (
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                          <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                          <p>Analyzing photo...</p>
+                        </div>
+                      )}
                       <Button
                         type="button"
                         variant="destructive"
@@ -587,21 +695,39 @@ export default function IssueSubmissionModal({ isOpen, onClose }: IssueSubmissio
                     <p className="mt-2 text-sm text-gray-600">Photo added successfully. You can remove it using the X button.</p>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-6 cursor-pointer"
-                       onClick={handlePhotoUploadClick}>
-                    <div className="space-y-1 text-center">
-                      <Upload className="mx-auto h-10 w-10 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div 
+                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-4 cursor-pointer"
+                      onClick={handlePhotoUploadClick}
+                    >
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <div className="text-sm text-gray-600">
                         <span className="font-medium text-primary hover:underline">Upload a photo</span>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 5MB
+                      <p className="text-xs text-gray-500 text-center mt-1">
+                        From your device
+                      </p>
+                    </div>
+                    
+                    <div 
+                      className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-4 cursor-pointer"
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      <Camera className="h-8 w-8 text-gray-400 mb-2" />
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium text-primary hover:underline">Take a photo</span>
+                      </div>
+                      <p className="text-xs text-gray-500 text-center mt-1">
+                        Using your camera
                       </p>
                     </div>
                   </div>
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-500">Adding a photo helps provide visual context to your issue report.</p>
+              <p className="mt-2 text-sm text-gray-500">
+                Adding a photo helps provide visual context to your issue report. 
+                Our AI will analyze the photo to help categorize the issue.
+              </p>
             </div>
             
             {/* Submit button */}

@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateEmailTemplate, regenerateEmailWithTone } from "./openai";
+import { generateEmailTemplate, regenerateEmailWithTone, analyzePhotoForIssueType } from "./openai";
 import { sendEmail, normalizeEmail } from "./email";
 import { insertProjectSchema, insertEmailSchema, insertUpvoteSchema, insertCommentSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -13,6 +13,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up authentication
   setupAuth(app);
+
+  // Analyze photo to determine issue type
+  app.post("/api/analyze-photo", async (req: Request, res: Response) => {
+    try {
+      const { photoData } = req.body;
+      
+      if (!photoData) {
+        return res.status(400).json({ message: "Photo data is required" });
+      }
+      
+      // Remove data:image/jpeg;base64, prefix if present
+      const base64Data = photoData.replace(/^data:image\/\w+;base64,/, "");
+      
+      // Analyze the photo using OpenAI Vision
+      const analysis = await analyzePhotoForIssueType(base64Data);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing photo:", error);
+      res.status(500).json({ 
+        message: "Error analyzing photo",
+        issueType: "other",
+        confidence: 0,
+        description: "Unable to analyze the image. Please manually select the issue type."
+      });
+    }
+  });
 
   // Get all projects with optional filters
   app.get("/api/projects", async (req: Request, res: Response) => {
