@@ -151,7 +151,7 @@ export default function CameraPromptModal({
           <DialogTitle className="text-xl font-semibold">Add a Photo (Recommended)</DialogTitle>
           <DialogDescription>
             Take a photo of the issue to help officials understand the problem better.
-            Photos are also analyzed automatically to help categorize the issue.
+            Our AI will automatically analyze your photo to categorize the issue type.
           </DialogDescription>
         </DialogHeader>
         
@@ -207,7 +207,7 @@ export default function CameraPromptModal({
             >
               <Camera className="h-8 w-8 text-primary" />
               <div className="text-sm font-medium">Take a Photo</div>
-              <div className="text-xs text-gray-500">Use your device camera</div>
+              <div className="text-xs text-gray-500">AI will analyze & categorize</div>
             </Button>
             
             <Button
@@ -217,7 +217,7 @@ export default function CameraPromptModal({
             >
               <Upload className="h-8 w-8 text-primary" />
               <div className="text-sm font-medium">Upload a Photo</div>
-              <div className="text-xs text-gray-500">Choose from your device</div>
+              <div className="text-xs text-gray-500">AI will still analyze it</div>
               
               <input
                 type="file"
