@@ -31,7 +31,7 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
-  // Define FormData type to include additional customization options
+  // Define FormData type to include additional customization options with predefined options
   type FormDataType = {
     title: string;
     description: string;
@@ -41,27 +41,85 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
     longitude: string;
     urgencyLevel: UrgencyLevel;
     contactEmail: string;
-    impactDescription: string;
     affectedGroups: string;
     desiredOutcome: string;
-    proposedSolution: string;
+    impactLevel: string;
     photoData: string | null;
   };
+
+  // Predefined options for dropdowns
+  const TITLE_OPTIONS = [
+    "Infrastructure Repair Needed",
+    "Safety Concern",
+    "Street Improvement Request",
+    "Damaged Infrastructure",
+    "Maintenance Request",
+    "Accessibility Issue",
+    "Pedestrian Safety Concern",
+    "Traffic Hazard",
+    "Community Improvement"
+  ];
+  
+  const LOCATION_OPTIONS = [
+    "Downtown Area",
+    "Main Street",
+    "Park Area",
+    "Residential Neighborhood",
+    "Commercial District",
+    "School Zone",
+    "Hospital Area",
+    "Public Square",
+    "Historic District",
+    "Industrial Zone",
+    "Highway Access"
+  ];
+
+  const AFFECTED_GROUPS_OPTIONS = [
+    "Elderly Residents",
+    "Children and Students",
+    "People with Disabilities",
+    "Local Businesses",
+    "Pedestrians",
+    "Cyclists",
+    "Public Transit Users",
+    "Motorists",
+    "Nearby Residents",
+    "Visitors and Tourists",
+    "All Community Members"
+  ];
+
+  const IMPACT_LEVEL_OPTIONS = [
+    "Minimal - Minor inconvenience",
+    "Moderate - Daily disruption",
+    "Significant - Safety risk",
+    "Severe - Immediate danger",
+    "Critical - Emergency situation"
+  ];
+
+  const DESIRED_OUTCOME_OPTIONS = [
+    "Repair damaged infrastructure",
+    "Install new safety feature",
+    "Regular maintenance schedule",
+    "Complete replacement/renovation",
+    "Installation of accessibility features",
+    "Traffic calming measures",
+    "Better lighting for safety",
+    "Addition of community amenities",
+    "Remove hazardous conditions"
+  ];
 
   const [formData, setFormData] = useState<FormDataType>({
     title: "",
     description: "",
     issueType: "" as IssueType,
     location: "",
-    latitude: "37.7749", // Default to San Francisco
-    longitude: "-122.4194",
+    latitude: "32.8397", // Default to Imperial Valley, CA
+    longitude: "-115.5663",
     urgencyLevel: "medium" as UrgencyLevel,
     contactEmail: "",
-    // Additional customization options
-    impactDescription: "",
     affectedGroups: "",
     desiredOutcome: "",
-    proposedSolution: "",
+    impactLevel: "",
     photoData: initialPhotoData || null,
   });
   
@@ -163,10 +221,8 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
         description: formData.description,
         urgencyLevel: formData.urgencyLevel,
         // Include optional fields only if they have content
-        ...(formData.impactDescription ? { impactDescription: formData.impactDescription } : {}),
         ...(formData.affectedGroups ? { affectedGroups: formData.affectedGroups } : {}),
-        ...(formData.desiredOutcome ? { desiredOutcome: formData.desiredOutcome } : {}),
-        ...(formData.proposedSolution ? { proposedSolution: formData.proposedSolution } : {})
+        ...(formData.desiredOutcome ? { desiredOutcome: formData.desiredOutcome } : {})
       };
       
       const response = await fetch("/api/generate-email", {
@@ -407,15 +463,13 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
       description: "",
       issueType: "" as IssueType,
       location: "",
-      latitude: "37.7749",
-      longitude: "-122.4194",
+      latitude: "32.8397", // Default to Imperial Valley, CA
+      longitude: "-115.5663",
       urgencyLevel: "medium" as UrgencyLevel,
       contactEmail: "",
-      // Reset customization fields
-      impactDescription: "",
       affectedGroups: "",
       desiredOutcome: "",
-      proposedSolution: "",
+      impactLevel: "",
       photoData: null,
     });
     setEmailTemplate({
@@ -457,15 +511,25 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
             {/* Issue title */}
             <div>
               <Label htmlFor="title">Issue Title</Label>
-              <Input
-                id="title"
-                name="title"
+              <Select
+                onValueChange={(value) => handleSelectChange("title", value)}
                 value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Brief title describing the issue"
-                className="mt-1"
-                required
-              />
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a title for your issue" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="infrastructure_repair">Infrastructure Repair Needed</SelectItem>
+                  <SelectItem value="safety_concern">Safety Concern</SelectItem>
+                  <SelectItem value="street_improvement">Street Improvement Request</SelectItem>
+                  <SelectItem value="damaged_infrastructure">Damaged Infrastructure</SelectItem>
+                  <SelectItem value="maintenance_request">Maintenance Request</SelectItem>
+                  <SelectItem value="accessibility_issue">Accessibility Issue</SelectItem>
+                  <SelectItem value="pedestrian_safety">Pedestrian Safety Concern</SelectItem>
+                  <SelectItem value="traffic_hazard">Traffic Hazard</SelectItem>
+                  <SelectItem value="community_improvement">Community Improvement</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             {/* Issue type */}
@@ -484,6 +548,13 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
                   <SelectItem value="pothole">Pothole</SelectItem>
                   <SelectItem value="sidewalk">Sidewalk Damage</SelectItem>
                   <SelectItem value="streetlight">Street Light Needed</SelectItem>
+                  <SelectItem value="flooding">Flooding</SelectItem>
+                  <SelectItem value="traffic_sign">Traffic Sign Issue</SelectItem>
+                  <SelectItem value="road_damage">Road Damage</SelectItem>
+                  <SelectItem value="utility_failure">Utility Failure</SelectItem>
+                  <SelectItem value="graffiti">Graffiti</SelectItem>
+                  <SelectItem value="tree_hazard">Tree Hazard</SelectItem>
+                  <SelectItem value="accessibility">Accessibility Issue</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -493,20 +564,35 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
             <div>
               <Label htmlFor="location">Location</Label>
               <div className="mt-1 flex rounded-md shadow-sm">
-                <Input
-                  type="text"
-                  name="location"
-                  id="location"
+                <Select
+                  onValueChange={(value) => handleSelectChange("location", value)}
                   value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="Enter address or intersection"
-                  className="rounded-l-md rounded-r-none"
-                  required
-                />
+                >
+                  <SelectTrigger className="w-full rounded-l-md rounded-r-none">
+                    <SelectValue placeholder="Select a location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="imperial_ave">Imperial Avenue</SelectItem>
+                    <SelectItem value="4th_street">4th Street</SelectItem>
+                    <SelectItem value="8th_street">8th Street</SelectItem>
+                    <SelectItem value="main_street">Main Street</SelectItem>
+                    <SelectItem value="dogwood_road">Dogwood Road</SelectItem>
+                    <SelectItem value="ross_avenue">Ross Avenue</SelectItem>
+                    <SelectItem value="plaza_drive">Plaza Drive</SelectItem>
+                    <SelectItem value="danenberg_drive">Danenberg Drive</SelectItem>
+                    <SelectItem value="worthington_road">Worthington Road</SelectItem>
+                    <SelectItem value="cole_road">Cole Road</SelectItem>
+                    <SelectItem value="aten_road">Aten Road</SelectItem>
+                    <SelectItem value="la_brucherie_road">La Brucherie Road</SelectItem>
+                    <SelectItem value="imperial_valley_college">Imperial Valley College</SelectItem>
+                    <SelectItem value="imperial_valley_mall">Imperial Valley Mall</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-l-none"
+                  onClick={() => document.getElementById('location-map-section')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   <i className="fas fa-map-marker-alt mr-2"></i>
                   Map
@@ -514,7 +600,7 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
               </div>
               
               {/* Map */}
-              <div className="mt-3 h-48 bg-gray-100 rounded-md relative">
+              <div id="location-map-section" className="mt-3 h-48 bg-gray-100 rounded-md relative">
                 <MapComponent
                   onLocationSelect={handleLocationSelect}
                   initialLocation={{
@@ -529,16 +615,25 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
             {/* Description */}
             <div>
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
+              <Select
+                onValueChange={(value) => handleSelectChange("description", value)}
                 value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-                placeholder="Describe the issue and why it needs attention"
-                className="mt-1"
-                required
-              />
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a description" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="needs_repair">Needs repair</SelectItem>
+                  <SelectItem value="safety_hazard">Safety hazard</SelectItem>
+                  <SelectItem value="not_functioning">Not functioning</SelectItem>
+                  <SelectItem value="damaged">Damaged and needs attention</SelectItem>
+                  <SelectItem value="poor_condition">In poor condition</SelectItem>
+                  <SelectItem value="missing">Missing and needs installation</SelectItem>
+                  <SelectItem value="outdated">Outdated and needs replacement</SelectItem>
+                  <SelectItem value="accessibility_barrier">Creates accessibility barrier</SelectItem>
+                  <SelectItem value="ongoing_issue">Ongoing issue for months</SelectItem>
+                </SelectContent>
+              </Select>
               <p className="mt-2 text-sm text-gray-500">Brief description of the issue and its impact on the community.</p>
             </div>
             
@@ -598,16 +693,23 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
                 </div>
                 
                 <div>
-                  <Label htmlFor="impactDescription">How does this issue impact the community?</Label>
-                  <Textarea
-                    id="impactDescription"
-                    name="impactDescription"
-                    value={formData.impactDescription}
-                    onChange={handleInputChange}
-                    rows={2}
-                    placeholder="Explain the negative effects of this issue"
-                    className="mt-1"
-                  />
+                  <Label htmlFor="impactLevel">What is the impact level?</Label>
+                  <Select
+                    onValueChange={(value) => handleSelectChange("impactLevel", value)}
+                    value={formData.impactLevel}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select impact level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Select impact level</SelectItem>
+                      <SelectItem value="minimal">Minimal - Minor inconvenience</SelectItem>
+                      <SelectItem value="moderate">Moderate - Daily disruption</SelectItem>
+                      <SelectItem value="significant">Significant - Safety risk</SelectItem>
+                      <SelectItem value="severe">Severe - Immediate danger</SelectItem>
+                      <SelectItem value="critical">Critical - Emergency situation</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div>
@@ -630,19 +732,6 @@ export default function IssueSubmissionModal({ isOpen, onClose, initialPhotoData
                       <SelectItem value="other">Other (describe in description)</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="proposedSolution">Do you have a proposed solution? (optional)</Label>
-                  <Textarea
-                    id="proposedSolution"
-                    name="proposedSolution"
-                    value={formData.proposedSolution}
-                    onChange={handleInputChange}
-                    rows={2}
-                    placeholder="Suggest how this issue could be resolved"
-                    className="mt-1"
-                  />
                 </div>
               </div>
             </div>
